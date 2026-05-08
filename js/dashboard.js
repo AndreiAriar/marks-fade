@@ -2,7 +2,7 @@
 
 /* ---- EMAILJS CONFIGURATION ---- */
 const EMAILJS_SERVICE_ID = 'service_ugm87w9';
-const EMAILJS_TEMPLATE_ID = 'template_appointment_reminder'; // Your new template ID
+const EMAILJS_TEMPLATE_ID = 'template_9g3h2r3';// Your new template ID
 const EMAILJS_PUBLIC_KEY = 'sk3FGrUYNvxDWPn4S';
 
 /* ---- AUTH GUARD ---- */
@@ -66,13 +66,18 @@ function toast(msg, type = '') {
   el.className = 'toast show ' + type;
   setTimeout(() => el.className = 'toast', 3200);
 }
-
 /* ====================================================
    EMAIL REMINDER FUNCTION
 ====================================================*/
 async function sendEmailReminder(record) {
-  // Check if client has email (from user's database or prompt)
-  // Since records don't store email, we'll prompt for it
+  // Check if emailjs is loaded
+  if (typeof emailjs === 'undefined') {
+    toast('Email service not loaded. Please refresh the page.', 'error');
+    console.error('EmailJS not defined - check if script loaded');
+    return;
+  }
+  
+  // Prompt for client email
   const clientEmail = prompt(`Enter email address for ${record.clientName}:`);
   
   if (!clientEmail) {
@@ -85,25 +90,50 @@ async function sendEmailReminder(record) {
     return;
   }
   
-  const btn = document.querySelector(`.email-btn[data-id="${record.id}"]`);
-  const originalText = btn ? btn.innerHTML : 'Send Email';
+  // Find the button to show loading state
+  const btns = document.querySelectorAll('.action-btn.email-btn');
+  let btn = null;
+  for (let b of btns) {
+    if (b.getAttribute('data-id') === record.id) {
+      btn = b;
+      break;
+    }
+  }
+  
+  const originalHTML = btn ? btn.innerHTML : 'Send Email';
   
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Sending...';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Sending...';
   }
   
   try {
+    // Format appointment details nicely
+    const formattedDate = formatDateForEmail(record.date);
+    const formattedTime = formatTimeForEmail(record.time);
+    
+    // Create a nice order summary
+    const orderDetails = `
+      ✂️ Service: ${record.service}
+      📅 Date: ${formattedDate}
+      ⏰ Time: ${formattedTime}
+      📍 Location: Mark's Fade Barbershop
+      ${record.notes ? `📝 Notes: ${record.notes}` : ''}
+    `;
+    
+    // Map to Order Confirmation template variables
+    // Most order confirmation templates expect: to_email, user_name, order_details, etc.
     const templateParams = {
       to_email: clientEmail,
-      clientName: record.clientName,
+      user_name: record.clientName,
+      order_details: orderDetails,
       service: record.service,
-      date: formatDate(record.date),
-      time: formatTime(record.time),
-      status: record.status,
-      barbershop: "Mark's Fade",
-      phone: record.phone || 'Not provided'
+      date: formattedDate,
+      time: formattedTime
     };
+    
+    console.log('Sending email reminder to:', clientEmail);
+    console.log('Template params:', templateParams);
     
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
@@ -111,17 +141,49 @@ async function sendEmailReminder(record) {
       templateParams
     );
     
-    console.log('Email sent:', response.status, response.text);
-    toast(`Reminder sent to ${clientEmail}!`, 'success');
+    console.log('Email sent successfully!', response.status, response.text);
+    toast(`✅ Appointment reminder sent to ${clientEmail}!`, 'success');
   } catch (error) {
-    console.error('Email failed:', error);
-    toast(`Failed to send email: ${error.text || error.message}`, 'error');
+    console.error('Email failed - Full error:', error);
+    
+    let errorMsg = 'Failed to send email. ';
+    if (error.text) {
+      try {
+        const errData = JSON.parse(error.text);
+        errorMsg += errData.message || error.text;
+      } catch {
+        errorMsg += error.text;
+      }
+    } else if (error.message) {
+      errorMsg += error.message;
+    } else {
+      errorMsg += 'Please check EmailJS configuration.';
+    }
+    
+    toast(errorMsg, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = originalText;
+      btn.innerHTML = originalHTML;
     }
   }
+}
+
+// Helper function for email date formatting
+function formatDateForEmail(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// Helper function for email time formatting
+function formatTimeForEmail(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
 }
 
 /* ====================================================

@@ -784,3 +784,9 @@ textarea::placeholder { color: var(--text-dim); }
   .overview-clock { text-align: left; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
