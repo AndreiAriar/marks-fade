@@ -1,222 +1,172 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mark's Fade — Premium Barbershop</title>
-  <link rel="stylesheet" href="css/auth.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <!-- EmailJS SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>emailjs.init({ publicKey: 'sk3FGrUYNvxDWPn4S' });</script>
-  <style>
-    /* ---- Password Strength Meter ---- */
-    .strength-meter {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .strength-bars {
-      display: flex;
-      gap: 4px;
-      flex: 1;
-    }
-    .strength-bar {
-      flex: 1;
-      height: 4px;
-      border-radius: 2px;
-      background: #2a2a2a;
-    }
-    .strength-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      min-width: 42px;
-      text-align: right;
-    }
-    /* ---- Forgot / Reset panels ---- */
-    .reset-sent {
-      text-align: center;
-      padding: 16px 0 8px;
-    }
-    .reset-sent svg {
-      margin-bottom: 16px;
-    }
-    .reset-sent h3 {
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 10px;
-    }
-    .reset-sent p {
-      font-size: 14px;
-      color: #999;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    .auth-link {
-      color: #e03030;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .auth-link:hover { opacity: 0.8; }
-  </style>
-</head>
-<body>
-  <div class="bg-overlay"></div>
-  <div class="auth-wrapper">
-    <div class="auth-card">
-      <!-- Decorative blobs -->
-      <div class="blob blob-top"></div>
-      <div class="blob blob-bottom"></div>
+const EMAILJS_SERVICE_ID  = 'service_ugm87w9';
+const EMAILJS_TEMPLATE_ID = 'template_6e520ik';
+const EMAILJS_PUBLIC_KEY  = 'sk3FGrUYNvxDWPn4S';
 
-      <!-- Header -->
-      <div class="brand">
-        <div class="brand-logo">
-          <svg viewBox="0 0 60 60" width="60" height="60">
-            <circle cx="30" cy="30" r="28" fill="none" stroke="#e03030" stroke-width="1.5"/>
-            <circle cx="30" cy="30" r="22" fill="none" stroke="#e03030" stroke-width="0.8" stroke-dasharray="3 3"/>
-            <text x="30" y="27" text-anchor="middle" fill="white" font-family="Bebas Neue" font-size="11" letter-spacing="1">MARK'S</text>
-            <text x="30" y="39" text-anchor="middle" fill="#e03030" font-family="Bebas Neue" font-size="14" letter-spacing="2">FADE</text>
-          </svg>
-        </div>
-        <h1 class="brand-name">Mark's <span>Fade</span></h1>
-        <p class="brand-tagline">PREMIUM BARBERSHOP EXPERIENCE</p>
-      </div>
+/* ============================================================
+   UTILITY — defined first so it's available everywhere below
+   ============================================================ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" data-tab="signin">SIGN IN</button>
-        <button class="tab" data-tab="register">REGISTER</button>
-      </div>
+/* ---- redirect if already logged in ---- */
+if (DB.session.isLoggedIn()) location.href = 'pages/dashboard.html';
 
-      <!-- Sign In Form -->
-      <div class="form-panel active" id="signin-panel">
-        <p class="form-section-label">WELCOME BACK</p>
-        <div class="field">
-          <label>Username</label>
-          <div class="input-wrap">
-            <span class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            </span>
-            <input type="text" id="signin-username" placeholder="Enter username" autocomplete="username"/>
-          </div>
-          <span class="field-error" id="err-signin-username"></span>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <div class="input-wrap">
-            <span class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </span>
-            <input type="password" id="signin-password" placeholder="Enter password" autocomplete="current-password"/>
-            <button type="button" class="toggle-pw" data-target="signin-password">
-              <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </div>
-          <span class="field-error" id="err-signin-password"></span>
-        </div>
-        <div class="form-error" id="signin-form-error"></div>
-        <button class="btn-primary" id="btn-signin">SIGN IN</button>
-        <p class="form-footer">Don't have an account? <a href="#" class="link" data-switch="register">Create one</a></p>
-      </div>
+/* ============================================================
+   TAB SWITCHING
+   ============================================================ */
+const tabs   = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.form-panel');
 
-      <!-- Register Form -->
-      <div class="form-panel" id="register-panel">
-        <p class="form-section-label">PERSONAL INFO</p>
-        <div class="field-row">
-          <div class="field">
-            <label>First Name</label>
-            <div class="input-wrap">
-              <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
-              <input type="text" id="reg-firstname" placeholder="First name"/>
-            </div>
-            <span class="field-error" id="err-reg-firstname"></span>
-          </div>
-          <div class="field">
-            <label>Last Name</label>
-            <div class="input-wrap">
-              <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
-              <input type="text" id="reg-lastname" placeholder="Last name"/>
-            </div>
-            <span class="field-error" id="err-reg-lastname"></span>
-          </div>
-        </div>
-        <div class="field">
-          <label>Email Address</label>
-          <div class="input-wrap">
-            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg></span>
-            <input type="email" id="reg-email" placeholder="your@email.com"/>
-          </div>
-          <span class="field-error" id="err-reg-email"></span>
-        </div>
-        <div class="field">
-          <label>Contact Number</label>
-          <div class="input-wrap">
-            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.72 19.79 19.79 0 0 1 1.6 5.18 2 2 0 0 1 3.56 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 18.28z"/></svg></span>
-            <input type="tel" id="reg-phone" placeholder="+63 XXX XXX XXXX"/>
-          </div>
-          <span class="field-error" id="err-reg-phone"></span>
-        </div>
+function switchTab(name) {
+  tabs.forEach(t   => t.classList.toggle('active', t.dataset.tab === name));
+  panels.forEach(p => p.classList.toggle('active', p.id === name + '-panel'));
+}
 
-        <p class="form-section-label" style="margin-top:16px">ACCOUNT DETAILS</p>
-        <div class="field">
-          <label>Username</label>
-          <div class="input-wrap">
-            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
-            <input type="text" id="reg-username" placeholder="Choose a username"/>
-          </div>
-          <span class="field-error" id="err-reg-username"></span>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <div class="input-wrap">
-            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-            <input type="password" id="reg-password" placeholder="Create a password"/>
-            <button type="button" class="toggle-pw" data-target="reg-password">
-              <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </div>
-          <!-- Password strength meter -->
-          <div id="reg-password-meter" class="strength-meter">
-            <div class="strength-bars">
-              <div class="strength-bar"></div>
-              <div class="strength-bar"></div>
-              <div class="strength-bar"></div>
-              <div class="strength-bar"></div>
-            </div>
-            <span class="strength-label"></span>
-          </div>
-          <span class="field-error" id="err-reg-password"></span>
-        </div>
-        <div class="field">
-          <label>Confirm Password</label>
-          <div class="input-wrap">
-            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-            <input type="password" id="reg-confirm" placeholder="Repeat your password"/>
-            <button type="button" class="toggle-pw" data-target="reg-confirm">
-              <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </div>
-          <span class="field-error" id="err-reg-confirm"></span>
-        </div>
-        <div class="form-error" id="register-form-error"></div>
-        <button class="btn-primary" id="btn-register">CREATE ACCOUNT</button>
-        <p class="form-footer">Already have an account? <a href="#" class="link" data-switch="signin">Sign in</a></p>
-      </div>
+tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
-    </div>
-  </div>
+document.querySelectorAll('[data-switch]').forEach(el =>
+  el.addEventListener('click', e => { e.preventDefault(); switchTab(el.dataset.switch); })
+);
 
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3500);
+}
 
-  <script src="js/db.js"></script>
-  <script src="js/auth.js"></script>
-</body>
-</html>
+/* ============================================================
+   ERROR HELPERS
+   ============================================================ */
+function clearErrors() {
+  document.querySelectorAll('.field-error').forEach(e => e.textContent = '');
+  document.querySelectorAll('.form-error').forEach(e => e.textContent = '');
+}
+
+function setErr(id, msg) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = msg;
+}
+
+/* ============================================================
+   PASSWORD VISIBILITY TOGGLES
+   ============================================================ */
+document.querySelectorAll('.toggle-pw').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input  = document.getElementById(btn.dataset.target);
+    const open   = btn.querySelector('.eye-open');
+    const closed = btn.querySelector('.eye-closed');
+    if (input.type === 'password') {
+      input.type = 'text';
+      open.classList.add('hidden');
+      closed.classList.remove('hidden');
+    } else {
+      input.type = 'password';
+      open.classList.remove('hidden');
+      closed.classList.add('hidden');
+    }
+  });
+});
+
+/* ============================================================
+   PASSWORD STRENGTH METER
+   Scores: 1=weak  2=fair  3=good  4=strong
+   ============================================================ */
+function getPasswordStrength(pw) {
+  if (!pw) return { score: 0, label: '', color: '' };
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw))           score++;
+  if (/[^A-Za-z0-9]/.test(pw))   score++;
+  score = Math.min(4, Math.max(1, score));
+  const map = {
+    1: { label: 'Weak',   color: '#e03030' },
+    2: { label: 'Fair',   color: '#ddbb44' },
+    3: { label: 'Good',   color: '#4488dd' },
+    4: { label: 'Strong', color: '#55cc77' },
+  };
+  return { score, ...map[score] };
+}
+
+function renderStrengthMeter(inputId, meterId) {
+  const input = document.getElementById(inputId);
+  const meter = document.getElementById(meterId);
+  if (!input || !meter) return;
+  input.addEventListener('input', () => {
+    const { score, label, color } = getPasswordStrength(input.value);
+    const bars     = meter.querySelectorAll('.strength-bar');
+    const labelEl  = meter.querySelector('.strength-label');
+    bars.forEach((bar, i) => {
+      bar.style.background  = i < score ? color : 'var(--surface2, #2a2a2a)';
+      bar.style.transition  = 'background 0.25s ease';
+    });
+    if (labelEl) {
+      labelEl.textContent = input.value ? label : '';
+      labelEl.style.color = color;
+    }
+  });
+}
+
+// Attach to register form
+renderStrengthMeter('reg-password', 'reg-password-meter');
+
+/* ============================================================
+   SIGN IN
+   ============================================================ */
+document.getElementById('btn-signin').addEventListener('click', () => {
+  clearErrors();
+  const username = document.getElementById('signin-username').value.trim();
+  const password = document.getElementById('signin-password').value;
+  let valid = true;
+
+  if (!username) { setErr('err-signin-username', 'Username is required.'); valid = false; }
+  if (!password) { setErr('err-signin-password', 'Password is required.'); valid = false; }
+  if (!valid) return;
+
+  const result = DB.users.authenticate(username, password);
+  if (!result.ok) {
+    document.getElementById('signin-form-error').textContent = result.error;
+    return;
+  }
+  DB.session.set(result.user);
+  toast('Welcome back, ' + result.user.firstName + '!', 'success');
+  setTimeout(() => location.href = 'pages/dashboard.html', 700);
+});
+
+/* ============================================================
+   REGISTER
+   ============================================================ */
+document.getElementById('btn-register').addEventListener('click', () => {
+  clearErrors();
+  const firstName = document.getElementById('reg-firstname').value.trim();
+  const lastName  = document.getElementById('reg-lastname').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const phone     = document.getElementById('reg-phone').value.trim();
+  const username  = document.getElementById('reg-username').value.trim();
+  const password  = document.getElementById('reg-password').value;
+  const confirm   = document.getElementById('reg-confirm').value;
+  let valid = true;
+
+  if (!firstName) { setErr('err-reg-firstname', 'Required.'); valid = false; }
+  if (!lastName)  { setErr('err-reg-lastname',  'Required.'); valid = false; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErr('err-reg-email', 'Valid email required.'); valid = false; }
+  if (!phone)     { setErr('err-reg-phone',     'Required.'); valid = false; }
+  if (!username || username.length < 3) { setErr('err-reg-username', 'Min 3 characters.'); valid = false; }
+  if (!password || password.length < 6) { setErr('err-reg-password', 'Min 6 characters.'); valid = false; }
+  if (password !== confirm) { setErr('err-reg-confirm', 'Passwords do not match.'); valid = false; }
+  if (!valid) return;
+
+  const result = DB.users.create({ firstName, lastName, email, phone, username, password });
+  if (!result.ok) {
+    document.getElementById('register-form-error').textContent = result.error;
+    return;
+  }
+  toast('Account created! Please sign in.', 'success');
+  setTimeout(() => switchTab('signin'), 800);
+});
