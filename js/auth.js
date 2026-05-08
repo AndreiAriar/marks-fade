@@ -184,8 +184,7 @@ if (btnForgot) {
         const response = await emailjs.send(
           EMAILJS_SERVICE_ID,
           EMAILJS_TEMPLATE_ID,
-          { to_email: email, user_name: user.firstName, reset_link: resetLink },
-          EMAILJS_PUBLIC_KEY
+          { to_email: email, user_name: user.firstName, reset_link: resetLink }
         );
         console.log('EmailJS success:', response.status, response.text);
       } catch (err) {
