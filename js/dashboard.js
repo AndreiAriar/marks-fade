@@ -1,5 +1,10 @@
 /* dashboard.js — full CRUD + overview + auth for Mark's Fade Dashboard */
 
+/* ---- EMAILJS CONFIGURATION ---- */
+const EMAILJS_SERVICE_ID = 'service_ugm87w9';
+const EMAILJS_TEMPLATE_ID = 'template_appointment_reminder'; // Your new template ID
+const EMAILJS_PUBLIC_KEY = 'sk3FGrUYNvxDWPn4S';
+
 /* ---- AUTH GUARD ---- */
 const currentUser = DB.session.get();
 if (!currentUser) location.href = '../index.html';
@@ -63,6 +68,63 @@ function toast(msg, type = '') {
 }
 
 /* ====================================================
+   EMAIL REMINDER FUNCTION
+====================================================*/
+async function sendEmailReminder(record) {
+  // Check if client has email (from user's database or prompt)
+  // Since records don't store email, we'll prompt for it
+  const clientEmail = prompt(`Enter email address for ${record.clientName}:`);
+  
+  if (!clientEmail) {
+    toast('Email cancelled.', '');
+    return;
+  }
+  
+  if (!clientEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    toast('Invalid email address!', 'error');
+    return;
+  }
+  
+  const btn = document.querySelector(`.email-btn[data-id="${record.id}"]`);
+  const originalText = btn ? btn.innerHTML : 'Send Email';
+  
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Sending...';
+  }
+  
+  try {
+    const templateParams = {
+      to_email: clientEmail,
+      clientName: record.clientName,
+      service: record.service,
+      date: formatDate(record.date),
+      time: formatTime(record.time),
+      status: record.status,
+      barbershop: "Mark's Fade",
+      phone: record.phone || 'Not provided'
+    };
+    
+    const response = await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      templateParams
+    );
+    
+    console.log('Email sent:', response.status, response.text);
+    toast(`Reminder sent to ${clientEmail}!`, 'success');
+  } catch (error) {
+    console.error('Email failed:', error);
+    toast(`Failed to send email: ${error.text || error.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+}
+
+/* ====================================================
    LIVE CLOCK
 ====================================================*/
 function updateClock() {
@@ -87,11 +149,9 @@ setInterval(updateClock, 1000);
 
 /* ====================================================
    HELPER: Sort appointments by date + time (ascending)
-   Used to assign sequential numbers (first booked = earliest)
 ====================================================*/
 function getAppointmentsByDateAndTime(records) {
   return [...records].sort((a, b) => {
-    // Combine date and time into comparable strings
     const dateTimeA = new Date(`${a.date}T${a.time || '00:00'}`);
     const dateTimeB = new Date(`${b.date}T${b.time || '00:00'}`);
     return dateTimeA - dateTimeB;
@@ -103,27 +163,22 @@ function getAppointmentsByDateAndTime(records) {
 ====================================================*/
 function renderOverview() {
   const all = DB.records.getByUser(currentUser.id);
-  
-  // Sort by date/time for consistent numbering
   const sortedByDateTime = getAppointmentsByDateAndTime(all);
   
-  /* stats */
-  document.getElementById('ov-total').textContent     = all.length;
-  document.getElementById('ov-done').textContent      = all.filter(r => r.status === 'Completed').length;
+  document.getElementById('ov-total').textContent = all.length;
+  document.getElementById('ov-done').textContent = all.filter(r => r.status === 'Completed').length;
   document.getElementById('ov-scheduled').textContent = all.filter(r => r.status === 'Scheduled').length;
   document.getElementById('ov-cancelled').textContent = all.filter(r => r.status === 'Cancelled').length;
 
-  /* recent (latest 5 by creation date - keep as before) */
   const sortedByCreated = [...all].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
-  const tbody  = document.getElementById('ov-recent-body');
-  const empty  = document.getElementById('ov-empty');
+  const tbody = document.getElementById('ov-recent-body');
+  const empty = document.getElementById('ov-empty');
 
   if (sortedByCreated.length === 0) {
     tbody.innerHTML = '';
     empty.classList.remove('hidden');
   } else {
     empty.classList.add('hidden');
-    // Build a map of appointment numbers based on date/time order
     const numberMap = new Map();
     sortedByDateTime.forEach((r, idx) => {
       numberMap.set(r.id, idx + 1);
@@ -140,7 +195,6 @@ function renderOverview() {
     `).join('');
   }
 
-  /* services breakdown - NEW STYLE with bar and percentage */
   renderServiceBreakdown(all);
 }
 
@@ -152,20 +206,12 @@ function renderServiceBreakdown(all) {
     return;
   }
 
-  // Count appointments per service
   const counts = {};
   all.forEach(r => { counts[r.service] = (counts[r.service] || 0) + 1; });
 
-  // Sort by count descending
   const sortedServices = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const total = all.length;
-
-  // Color palette matching the screenshot style
   const colors = ['#e03030', '#888888', '#e07020', '#4488dd', '#55cc77', '#ddbb44', '#cc77ee'];
-
-  // Build donut chart SVG
-  const cx = 80, cy = 80, r = 58, innerR = 38;
-  const circumference = 2 * Math.PI * r;
 
   let cumulativePercent = 0;
   const segments = sortedServices.map(([service, count], i) => {
@@ -174,16 +220,15 @@ function renderServiceBreakdown(all) {
     const endAngle = (cumulativePercent + pct) * 2 * Math.PI - Math.PI / 2;
     cumulativePercent += pct;
 
+    const cx = 80, cy = 80, r = 58, innerR = 38;
     const x1 = cx + r * Math.cos(startAngle);
     const y1 = cy + r * Math.sin(startAngle);
     const x2 = cx + r * Math.cos(endAngle);
     const y2 = cy + r * Math.sin(endAngle);
-
     const xi1 = cx + innerR * Math.cos(endAngle);
     const yi1 = cy + innerR * Math.sin(endAngle);
     const xi2 = cx + innerR * Math.cos(startAngle);
     const yi2 = cy + innerR * Math.sin(startAngle);
-
     const largeArc = pct > 0.5 ? 1 : 0;
 
     const d = [
@@ -197,12 +242,10 @@ function renderServiceBreakdown(all) {
     return { d, color: colors[i % colors.length], service, count, pct };
   });
 
-  // Add a small gap between segments by slightly shrinking each arc (stroke trick via gap color)
   const svgSegments = segments.map(seg => 
     `<path d="${seg.d}" fill="${seg.color}" stroke="#1a1a1a" stroke-width="2"/>`
   ).join('');
 
-  // Legend items (show top 4 like screenshot)
   const legendItems = sortedServices.slice(0, 4).map(([service, count], i) => {
     const pct = Math.round((count / total) * 100);
     return `
@@ -217,8 +260,8 @@ function renderServiceBreakdown(all) {
     <div class="donut-chart-wrap">
       <svg viewBox="0 0 160 160" width="160" height="160" class="donut-svg">
         ${svgSegments}
-        <text x="${cx}" y="${cy - 6}" text-anchor="middle" fill="#ffffff" font-family="Bebas Neue, sans-serif" font-size="22" letter-spacing="1">${total}</text>
-        <text x="${cx}" y="${cy + 10}" text-anchor="middle" fill="#888888" font-family="Barlow, sans-serif" font-size="8" letter-spacing="1.5">TOTAL</text>
+        <text x="80" y="74" text-anchor="middle" fill="#ffffff" font-family="Bebas Neue, sans-serif" font-size="22" letter-spacing="1">${total}</text>
+        <text x="80" y="90" text-anchor="middle" fill="#888888" font-family="Barlow, sans-serif" font-size="8" letter-spacing="1.5">TOTAL</text>
       </svg>
       <div class="donut-legend">
         ${legendItems}
@@ -237,7 +280,6 @@ let searchQuery = '';
 /* ---- RENDER TABLE ---- */
 function renderRecords() {
   const allUserRecords = DB.records.getByUser(currentUser.id);
-  // Filter by search if needed
   const records = searchQuery
     ? DB.records.search(currentUser.id, searchQuery)
     : allUserRecords;
@@ -254,15 +296,12 @@ function renderRecords() {
   
   empty.classList.add('hidden');
   
-  // Get ALL records sorted by date/time (for correct numbering)
   const sortedAllByDateTime = getAppointmentsByDateAndTime(allUserRecords);
-  // Create a map of ID -> sequential number based on date/time order
   const numberMap = new Map();
   sortedAllByDateTime.forEach((r, idx) => {
     numberMap.set(r.id, idx + 1);
   });
   
-  // Render rows (preserve search results order, but number from global order)
   tbody.innerHTML = records.map(record => {
     const appointmentNumber = numberMap.get(record.id) || '?';
     const hasNotes = record.notes && record.notes.trim() !== '';
@@ -286,21 +325,34 @@ function renderRecords() {
             <button class="action-btn delete" onclick="window.openDelete('${record.id}', '${esc(record.clientName)}')" title="Delete">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
             </button>
+            <button class="action-btn email-btn" data-id="${record.id}" onclick="window.sendReminder('${record.id}')" title="Send Email Reminder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+            </button>
           </div>
         </td>
-      </table>
+      </tr>
     `;
   }).join('');
   
   updateStats();
 }
 
+/* ---- SEND REMINDER FUNCTION (exposed globally) ---- */
+window.sendReminder = async function(id) {
+  const record = DB.records.getByUser(currentUser.id).find(r => r.id === id);
+  if (!record) {
+    toast('Record not found!', 'error');
+    return;
+  }
+  await sendEmailReminder(record);
+};
+
 /* ---- UPDATE STATS ---- */
 function updateStats() {
   const all = DB.records.getByUser(currentUser.id);
-  document.getElementById('stat-total').textContent     = all.length;
+  document.getElementById('stat-total').textContent = all.length;
   document.getElementById('stat-scheduled').textContent = all.filter(r => r.status === 'Scheduled').length;
-  document.getElementById('stat-done').textContent      = all.filter(r => r.status === 'Completed').length;
+  document.getElementById('stat-done').textContent = all.filter(r => r.status === 'Completed').length;
   document.getElementById('stat-cancelled').textContent = all.filter(r => r.status === 'Cancelled').length;
 }
 
@@ -426,7 +478,7 @@ if (saveBtn) {
     }
     closeModal('modal-overlay');
     renderRecords();
-    renderOverview(); // Also refresh overview when data changes
+    renderOverview();
   });
 }
 
