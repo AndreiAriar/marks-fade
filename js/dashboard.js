@@ -66,31 +66,67 @@ function toast(msg, type = '') {
   el.className = 'toast show ' + type;
   setTimeout(() => el.className = 'toast', 3200);
 }
+
 /* ====================================================
-   EMAIL REMINDER FUNCTION - FIXED FOR YOUR TEMPLATE
+   EMAIL REMINDER - WITH CUSTOM MODAL (NO BROWSER POPUP)
 ====================================================*/
-async function sendEmailReminder(record) {
-  // Check if emailjs is loaded
-  if (typeof emailjs === 'undefined') {
-    toast('Email service not loaded. Please refresh the page.', 'error');
+
+// Variables to track which appointment we're emailing about
+let currentEmailRecord = null;
+
+// Open email modal instead of browser prompt
+window.openEmailModal = function(id) {
+  // Find the record
+  const record = DB.records.getByUser(currentUser.id).find(r => r.id === id);
+  if (!record) {
+    toast('Record not found!', 'error');
     return;
   }
   
-  // Prompt for client email
-  const clientEmail = prompt(`Enter email address for ${record.clientName}:`);
+  // Store the record for later use
+  currentEmailRecord = record;
   
+  // Update modal with client name
+  document.getElementById('email-client-name').textContent = record.clientName;
+  
+  // Clear previous errors and input
+  document.getElementById('email-address').value = '';
+  document.getElementById('err-email-address').textContent = '';
+  
+  // Open the modal
+  openModal('email-modal-overlay');
+};
+
+// Send email from modal
+async function sendEmailFromModal() {
+  if (!currentEmailRecord) {
+    toast('No appointment selected', 'error');
+    closeModal('email-modal-overlay');
+    return;
+  }
+  
+  // Get email from input
+  const clientEmail = document.getElementById('email-address').value.trim();
+  
+  // Validate email
   if (!clientEmail) {
-    toast('Email cancelled.', '');
+    document.getElementById('err-email-address').textContent = 'Email address is required.';
     return;
   }
   
   if (!clientEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    toast('Invalid email address!', 'error');
+    document.getElementById('err-email-address').textContent = 'Please enter a valid email address.';
     return;
   }
   
-  // Find the button
-  const btn = document.querySelector(`.email-btn[data-id="${record.id}"]`);
+  // Clear error
+  document.getElementById('err-email-address').textContent = '';
+  
+  // Close modal
+  closeModal('email-modal-overlay');
+  
+  // Find the button to show loading state
+  const btn = document.querySelector(`.email-btn[data-id="${currentEmailRecord.id}"]`);
   const originalHTML = btn ? btn.innerHTML : 'Send Email';
   
   if (btn) {
@@ -100,24 +136,24 @@ async function sendEmailReminder(record) {
   
   try {
     // Format dates nicely
-    const formattedDate = formatDateForEmail(record.date);
-    const formattedTime = formatTimeForEmail(record.time);
+    const formattedDate = formatDateForEmail(currentEmailRecord.date);
+    const formattedTime = formatTimeForEmail(currentEmailRecord.time);
     
-    // THESE VARIABLES MUST MATCH YOUR TEMPLATE EXACTLY
+    // Template parameters that match your Order Confirmation template
     const templateParams = {
-      email: clientEmail,           // {{email}} - REQUIRED for recipient
-      clientName: record.clientName, // {{clientName}} - from your template
-      service: record.service,       // {{service}} - from your template
-      date: formattedDate,           // {{date}} - from your template
-      time: formattedTime            // {{time}} - from your template
+      email: clientEmail,
+      clientName: currentEmailRecord.clientName,
+      service: currentEmailRecord.service,
+      date: formattedDate,
+      time: formattedTime
     };
     
     console.log('Sending email to:', clientEmail);
     console.log('Template params:', templateParams);
     
     const response = await emailjs.send(
-      'service_ugm87w9',
-      'template_9g3h2r3',
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
       templateParams
     );
     
@@ -127,18 +163,27 @@ async function sendEmailReminder(record) {
   } catch (error) {
     console.error('❌ Email failed:', error);
     
+    let errorMsg = 'Failed to send email. ';
     if (error.status === 422) {
-      toast('Email failed: Make sure you entered a valid email address', 'error');
+      errorMsg = 'Email failed: Make sure you entered a valid email address';
     } else if (error.text) {
-      toast(`Error: ${error.text}`, 'error');
-    } else {
-      toast(`Failed: ${error.message || 'Unknown error'}`, 'error');
+      try {
+        const errData = JSON.parse(error.text);
+        errorMsg += errData.message || error.text;
+      } catch {
+        errorMsg += error.text;
+      }
+    } else if (error.message) {
+      errorMsg += error.message;
     }
+    
+    toast(errorMsg, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = originalHTML;
     }
+    currentEmailRecord = null;
   }
 }
 
@@ -365,7 +410,7 @@ function renderRecords() {
             <button class="action-btn delete" onclick="window.openDelete('${record.id}', '${esc(record.clientName)}')" title="Delete">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
             </button>
-            <button class="action-btn email-btn" data-id="${record.id}" onclick="window.sendReminder('${record.id}')" title="Send Email Reminder">
+            <button class="action-btn email-btn" data-id="${record.id}" onclick="window.openEmailModal('${record.id}')" title="Send Email Reminder">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
             </button>
           </div>
@@ -376,16 +421,6 @@ function renderRecords() {
   
   updateStats();
 }
-
-/* ---- SEND REMINDER FUNCTION (exposed globally) ---- */
-window.sendReminder = async function(id) {
-  const record = DB.records.getByUser(currentUser.id).find(r => r.id === id);
-  if (!record) {
-    toast('Record not found!', 'error');
-    return;
-  }
-  await sendEmailReminder(record);
-};
 
 /* ---- UPDATE STATS ---- */
 function updateStats() {
@@ -572,6 +607,30 @@ const deleteClose = document.getElementById('delete-close');
 if (deleteClose) deleteClose.addEventListener('click', () => closeModal('delete-overlay'));
 const deleteCancel = document.getElementById('btn-delete-cancel');
 if (deleteCancel) deleteCancel.addEventListener('click', () => closeModal('delete-overlay'));
+
+// Email modal close handlers
+const emailModalClose = document.getElementById('email-modal-close');
+if (emailModalClose) {
+  emailModalClose.addEventListener('click', () => closeModal('email-modal-overlay'));
+}
+
+const emailCancelBtn = document.getElementById('btn-email-cancel');
+if (emailCancelBtn) {
+  emailCancelBtn.addEventListener('click', () => closeModal('email-modal-overlay'));
+}
+
+const emailSendBtn = document.getElementById('btn-email-send');
+if (emailSendBtn) {
+  emailSendBtn.addEventListener('click', sendEmailFromModal);
+}
+
+// Click outside to close email modal
+const emailModalOverlay = document.getElementById('email-modal-overlay');
+if (emailModalOverlay) {
+  emailModalOverlay.addEventListener('click', function(e) {
+    if (e.target === this) closeModal('email-modal-overlay');
+  });
+}
 
 // Click outside to close
 const modalOverlay = document.getElementById('modal-overlay');

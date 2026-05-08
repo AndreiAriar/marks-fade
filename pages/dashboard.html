@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mark's Fade — Dashboard</title>
-    <link rel="stylesheet" href="../css/dashboard.css"/>
+  <link rel="stylesheet" href="../css/dashboard.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <!-- EmailJS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -219,7 +219,7 @@
 
 </main>
 
-<!-- ===== MODAL ===== -->
+<!-- ===== ADD RECORD MODAL ===== -->
 <div class="modal-overlay hidden" id="modal-overlay">
   <div class="modal" id="modal">
     <div class="modal-header">
@@ -305,7 +305,7 @@
   </div>
 </div>
 
-<!-- DELETE CONFIRM -->
+<!-- DELETE CONFIRM MODAL -->
 <div class="modal-overlay hidden" id="delete-overlay">
   <div class="modal modal-sm">
     <div class="modal-header">
@@ -318,6 +318,35 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="btn-delete-cancel">Cancel</button>
       <button class="btn-danger" id="btn-delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL REMINDER MODAL (Custom modal - no browser popup) -->
+<div class="modal-overlay hidden" id="email-modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 class="modal-title">Send Email Reminder</h3>
+      <button class="modal-close" id="email-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:#aaa;line-height:1.6; margin-bottom: 20px;">
+        Enter email address for <strong id="email-client-name" style="color:#e03030"></strong>:
+      </p>
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+          </span>
+          <input type="email" id="email-address" placeholder="client@example.com" autocomplete="email"/>
+        </div>
+        <span class="field-error" id="err-email-address"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btn-email-cancel">Cancel</button>
+      <button class="btn-red" id="btn-email-send">Send Reminder</button>
     </div>
   </div>
 </div>
