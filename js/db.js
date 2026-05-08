@@ -39,6 +39,15 @@ const DB = (() => {
       if (!user)                 return { ok: false, error: 'Username not found.' };
       if (user.password !== password) return { ok: false, error: 'Incorrect password.' };
       return { ok: true, user };
+    },
+
+    resetPassword: function(email, newPassword) {
+      const list = getAll(USERS_KEY);
+      const user = list.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!user) return { ok: false, error: 'User not found.' };
+      user.password = newPassword;
+      setAll(USERS_KEY, list);
+      return { ok: true };
     }
   };
 
@@ -120,17 +129,6 @@ const DB = (() => {
       delete tokens[token];
       localStorage.setItem(RESET_KEY, JSON.stringify(tokens));
     }
-  };
-
-  /* ====== USERS — reset password ====== */
-  users.resetPassword = function(email, newPassword) {
-    const list = getAll(USERS_KEY);
-    const idx  = list.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-    if (idx === -1) return { ok: false, error: 'User not found.' };
-    list[idx].password = newPassword;
-    list[idx].updatedAt = now();
-    setAll(USERS_KEY, list);
-    return { ok: true };
   };
 
   return { users, session, records, resetTokens };
