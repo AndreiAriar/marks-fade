@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <!-- EmailJS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
- <script>emailjs.init({ publicKey: 'sk3FGrUYNvxDWPn4S' });</script>
+  <script>emailjs.init({ publicKey: 'sk3FGrUYNvxDWPn4S' });</script>
   <style>
     /* ---- Password Strength Meter ---- */
     .strength-meter {
@@ -118,34 +118,10 @@
             </button>
           </div>
           <span class="field-error" id="err-signin-password"></span>
-          <div style="text-align:right; margin-top:6px;">
-            <a href="#" id="forgot-link" class="auth-link" style="font-size:11px; font-weight:500;">Forgot password?</a>
-          </div>
         </div>
         <div class="form-error" id="signin-form-error"></div>
         <button class="btn-primary" id="btn-signin">SIGN IN</button>
         <p class="form-footer">Don't have an account? <a href="#" class="link" data-switch="register">Create one</a></p>
-      </div>
-
-      <!-- Forgot Password Form -->
-      <div class="form-panel" id="forgot-panel">
-        <p class="form-section-label">RESET PASSWORD</p>
-        <p style="color:#888; font-size:13px; margin-bottom:18px; line-height:1.5;">
-          Enter the email address on your account and we'll send you a reset link.
-        </p>
-        <div class="field">
-          <label>Email Address</label>
-          <div class="input-wrap">
-            <span class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-            </span>
-            <input type="email" id="forgot-email" placeholder="you@example.com"/>
-          </div>
-          <span class="field-error" id="err-forgot-email"></span>
-        </div>
-        <div class="form-error" id="forgot-form-error"></div>
-        <button class="btn-primary" id="btn-forgot">SEND RESET LINK</button>
-        <p class="form-footer"><a href="#" id="back-to-signin" class="auth-link">← Back to Sign In</a></p>
       </div>
 
       <!-- Register Form -->
