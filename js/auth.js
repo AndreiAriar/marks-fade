@@ -178,10 +178,11 @@ if (btnForgot) {
 
     const user = DB.users.findByEmail(email);
 
-    if (user) {
-      const token     = DB.resetTokens.create(email);
-      const resetLink = window.location.origin + window.location.pathname + '?reset=' + token;
-
+  if (user) {
+  const token     = DB.resetTokens.create(email);
+  // Point to the new reset-password.html page
+  const resetLink = 'https://andreiariar.github.io/marks-fade/reset-password.html?token=' + token;
+  
       btnForgot.disabled    = true;
       btnForgot.textContent = 'Sending…';
 
