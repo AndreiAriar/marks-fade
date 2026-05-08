@@ -10,9 +10,9 @@
         {{user_name}}  — recipient's first name (optional)
    4. Replace the three values below with your real IDs
    ============================================================ */
-const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   // e.g. 'service_abc123'
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // e.g. 'template_xyz789'
-const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // e.g. 'user_XXXXX...'
+const EMAILJS_SERVICE_ID  = 'service_ugm87w9';
+const EMAILJS_TEMPLATE_ID = 'template_6e520ik';
+const EMAILJS_PUBLIC_KEY  = 'sk3FGrUYNvxDWPn4S';
 
 /* ---- redirect if already logged in ---- */
 if (DB.session.isLoggedIn()) location.href = 'pages/dashboard.html';
@@ -178,12 +178,12 @@ if (btnForgot) {
 
     const user = DB.users.findByEmail(email);
 
-  if (user) {
-  const token     = DB.resetTokens.create(email);
-  // Point to the new reset-password.html page
-  const resetLink = 'https://andreiariar.github.io/marks-fade/reset-password.html?token=' + token;
-  
-      btnForgot.disabled    = true;
+    if (user) {
+      const token = DB.resetTokens.create(email);
+      // UPDATED: Point to the new reset-password.html page
+      const resetLink = 'https://andreiariar.github.io/marks-fade/reset-password.html?token=' + token;
+
+      btnForgot.disabled = true;
       btnForgot.textContent = 'Sending…';
 
       try {
@@ -193,11 +193,12 @@ if (btnForgot) {
           { to_email: email, user_name: user.firstName, reset_link: resetLink },
           EMAILJS_PUBLIC_KEY
         );
+        console.log('Reset email sent successfully to:', email);
       } catch (err) {
         console.error('EmailJS error:', err);
         // Silent fail — never reveal whether email exists
       } finally {
-        btnForgot.disabled    = false;
+        btnForgot.disabled = false;
         btnForgot.textContent = 'Send Reset Link';
       }
     }
@@ -224,7 +225,8 @@ if (btnForgot) {
 }
 
 /* ============================================================
-   RESET PASSWORD PANEL (landed from email link)
+   RESET PASSWORD PANEL (landed from email link on index.html)
+   NOTE: This is for the OLD ?reset= flow. The NEW flow uses reset-password.html
    ============================================================ */
 function showResetPanel(token, email) {
   document.querySelector('.tabs')?.classList.add('hidden');
@@ -364,8 +366,7 @@ function escHtml(s) {
 }
 
 /* ============================================================
-   INIT — check for reset token in URL (must run after all
-   functions above are defined)
+   INIT — check for reset token in URL (backward compatibility)
    ============================================================ */
 const urlParams  = new URLSearchParams(window.location.search);
 const resetToken = urlParams.get('reset');
