@@ -2,6 +2,13 @@ const EMAILJS_SERVICE_ID  = 'service_ugm87w9';
 const EMAILJS_TEMPLATE_ID = 'template_6e520ik';
 const EMAILJS_PUBLIC_KEY  = 'sk3FGrUYNvxDWPn4S';
 
+/* ============================================================
+   UTILITY — defined first so it's available everywhere below
+   ============================================================ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 /* ---- redirect if already logged in ---- */
 if (DB.session.isLoggedIn()) location.href = 'pages/dashboard.html';
 
@@ -169,7 +176,7 @@ if (btnForgot) {
     if (user) {
       const token = DB.resetTokens.create(email);
       // UPDATED: Point to the new reset-password.html page
-      const resetLink = 'https://andreiariar.github.io/marks-fade/reset-password.html?token=' + token;
+      const resetLink = 'https://andreiariar.github.io/marks-fade/resetpassword.html?token=' + token;
 
       btnForgot.disabled = true;
       btnForgot.textContent = 'Sending…';
@@ -346,12 +353,7 @@ document.getElementById('btn-register').addEventListener('click', () => {
   setTimeout(() => switchTab('signin'), 800);
 });
 
-/* ============================================================
-   UTILITY
-   ============================================================ */
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+/* escHtml defined at top of file */
 
 /* ============================================================
    INIT — check for reset token in URL (backward compatibility)
