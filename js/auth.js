@@ -173,32 +173,36 @@ if (btnForgot) {
 
     const user = DB.users.findByEmail(email);
 
+    btnForgot.disabled = true;
+    btnForgot.textContent = 'Sending…';
+
     if (user) {
       const token = DB.resetTokens.create(email);
-      // UPDATED: Point to the new reset-password.html page
       const resetLink = 'https://andreiariar.github.io/marks-fade/resetpassword.html?token=' + token;
 
-      btnForgot.disabled = true;
-      btnForgot.textContent = 'Sending…';
-
       try {
-        await emailjs.send(
+        const response = await emailjs.send(
           EMAILJS_SERVICE_ID,
           EMAILJS_TEMPLATE_ID,
           { to_email: email, user_name: user.firstName, reset_link: resetLink },
           EMAILJS_PUBLIC_KEY
         );
-        console.log('Reset email sent successfully to:', email);
+        console.log('EmailJS success:', response.status, response.text);
       } catch (err) {
-        console.error('EmailJS error:', err);
-        // Silent fail — never reveal whether email exists
-      } finally {
+        console.error('EmailJS send failed:', err);
+        const formErr = document.getElementById('forgot-form-error');
+        if (formErr) {
+          formErr.textContent = 'Email failed: ' + (err.text || err.message || JSON.stringify(err));
+        }
         btnForgot.disabled = false;
-        btnForgot.textContent = 'Send Reset Link';
+        btnForgot.textContent = 'SEND RESET LINK';
+        return;
       }
     }
 
-    // Always show success (security: don't leak if email is registered)
+    btnForgot.disabled = false;
+    btnForgot.textContent = 'SEND RESET LINK';
+
     const fp = document.getElementById('forgot-panel');
     if (fp) {
       fp.innerHTML = `
