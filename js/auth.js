@@ -1,15 +1,3 @@
-/* auth.js — handles sign-in / register / forgot password on index.html */
-
-/* ============================================================
-   EMAILJS CONFIG
-   1. Go to https://www.emailjs.com and create a free account
-   2. Create an Email Service (Gmail, Outlook, etc.)
-   3. Create an Email Template — use these variables in the template:
-        {{to_email}}   — recipient email
-        {{reset_link}} — the reset URL
-        {{user_name}}  — recipient's first name (optional)
-   4. Replace the three values below with your real IDs
-   ============================================================ */
 const EMAILJS_SERVICE_ID  = 'service_ugm87w9';
 const EMAILJS_TEMPLATE_ID = 'template_6e520ik';
 const EMAILJS_PUBLIC_KEY  = 'sk3FGrUYNvxDWPn4S';
